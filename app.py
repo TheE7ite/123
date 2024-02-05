@@ -4,7 +4,7 @@ from transformers import AutoTokenizer, AutoModelForQuestionAnswering
 import torch
 
 # Initialize the OpenAI API client
-openai.api_key = "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"
+openai.api_key = "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"
 
 # Initialize the question answering model
 tokenizer = AutoTokenizer.from_pretrained("distilbert-base-uncased-distilled-squad")
