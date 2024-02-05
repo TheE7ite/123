@@ -1,51 +1,84 @@
-# Copyright (c) Streamlit Inc. (2018-2022) Snowflake Inc. (2022)
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-
 import streamlit as st
-from streamlit.logger import get_logger
+import openai
+from transformers import AutoTokenizer, AutoModelForQuestionAnswering
+import torch
 
-LOGGER = get_logger(__name__)
+# Initialize the OpenAI API client
+openai.api_key = "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"
 
+# Initialize the question answering model
+tokenizer = AutoTokenizer.from_pretrained("distilbert-base-uncased-distilled-squad")
+model = AutoModelForQuestionAnswering.from_pretrained("distilbert-base-uncased-distilled-squad")
 
-def run():
-    st.set_page_config(
-        page_title="Hello",
-        page_icon="👋",
-    )
+def main():
+    # Set the page title and header
+    st.title("AI Education Tool")
+    st.header("Enter a topic and I'll generate a context, question, and assess your answer.")
 
-    st.write("# Welcome to Streamlit! 👋")
+    # Get the topic from the user
+    topic = st.text_input("Topic:")
 
-    st.sidebar.success("Select a demo above.")
+    # Generate the context, question, and answer
+    context = generate_context(topic)
+    question = generate_question(context)
+    answer = generate_answer(context, question)
 
-    st.markdown(
-        """
-        Streamlit is an open-source app framework built specifically for
-        Machine Learning and Data Science projects.
-        **👈 Select a demo from the sidebar** to see some examples
-        of what Streamlit can do!
-        ### Want to learn more?
-        - Check out [streamlit.io](https://streamlit.io)
-        - Jump into our [documentation](https://docs.streamlit.io)
-        - Ask a question in our [community
-          forums](https://discuss.streamlit.io)
-        ### See more complex demos
-        - Use a neural net to [analyze the Udacity Self-driving Car Image
-          Dataset](https://github.com/streamlit/demo-self-driving)
-        - Explore a [New York City rideshare dataset](https://github.com/streamlit/demo-uber-nyc-pickups)
-    """
-    )
+    # Display the context, question, and answer to the user
+    st.write("**Context:**")
+    st.write(context)
+    st.write("**Question:**")
+    st.write(question)
+    st.write("**Answer:**")
+    st.write(answer)
 
+    # Get the user's answer
+    user_answer = st.text_input("Your Answer:")
+
+    # Assess the user's answer
+    assessment = assess_answer(user_answer, answer)
+
+    # Display the assessment to the user
+    st.write("**Assessment:**")
+    st.write(assessment)
+
+def generate_context(topic):
+    prompt = f"Generate a short context about {topic}."
+    response = openai.chat.completions.create(model="gpt-3.5-turbo-16k",
+    messages=[
+        {
+            "role":"user",
+            "content": prompt,
+        }
+    ])
+    return response.choices[0].message.content
+
+def generate_question(context):
+    prompt = f"Generate a multiple-choice question based on the following context:\n\n{context}"
+    response = openai.chat.completions.create(model="gpt-3.5-turbo-16k",
+    messages=[
+        {
+            "role":"user",
+            "content": prompt,
+        }
+    ])
+    return response.choices[0].message.content
+
+def generate_answer(context, question):
+  prompt = f"Answer the following question based on the provided context:\n\nContext:\n{context}\n\nQuestion:\n{question}"
+  response = openai.chat.completions.create(model="gpt-3.5-turbo-16k",
+  messages=[
+      {
+          "role": "user",
+          "content": prompt,
+      }
+  ])
+  return response.choices[0].message.content
+
+def assess_answer(user_answer, answer):
+  if user_answer == answer:
+        return "Correct!"
+  else:
+        return "Incorrect. The correct answer is: " + answer
 
 if __name__ == "__main__":
-    run()
+    main()
